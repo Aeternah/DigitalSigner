@@ -1,3 +1,4 @@
+
 # ==================== Builder Stage ====================
 FROM ubuntu:24.04 AS builder
 
@@ -12,6 +13,7 @@ RUN apt-get update && apt-get upgrade -y && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
+
 COPY . .
 
 RUN mkdir -p build && cd build && \
@@ -19,17 +21,16 @@ RUN mkdir -p build && cd build && \
           -G Ninja \
           -DCMAKE_INSTALL_PREFIX=/usr/local \
           .. && \
-    ninja -j$(nproc) && \
+    ninja && \
     ninja install
 
-# ==================== Runtime Stage (лёгкий) ====================
+# ==================== Runtime Stage ====================
 FROM ubuntu:24.04
 
 ENV DEBIAN_FRONTEND=noninteractive \
     QT_QPA_PLATFORM=xcb \
     LANG=C.UTF-8
 
-# Минимальный набор библиотек
 RUN apt-get update && apt-get upgrade -y && \
     apt-get install -y --no-install-recommends \
     libqt5widgets5 libqt5gui5 libqt5core5a \
@@ -39,7 +40,9 @@ RUN apt-get update && apt-get upgrade -y && \
     rm -rf /var/lib/apt/lists/* && \
     apt-get autoremove -y && apt-get clean
 
+# Копируем приложение
 COPY --from=builder /usr/local/bin/DigitalSigner /usr/bin/DigitalSigner
 
 WORKDIR /data
+
 ENTRYPOINT ["/usr/bin/DigitalSigner"]

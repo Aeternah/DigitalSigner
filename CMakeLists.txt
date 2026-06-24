@@ -72,6 +72,10 @@ target_link_libraries(DigitalSignerTests PRIVATE
 )
 
 add_test(NAME DigitalSignerTests COMMAND DigitalSignerTests)
+# ====================== Install (для Docker) ======================
+install(TARGETS DigitalSigner
+    RUNTIME DESTINATION bin
+)
 
 message(STATUS "✅ CMake configured successfully!")
 message(STATUS "Run: mingw32-make -j2")
