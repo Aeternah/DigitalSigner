@@ -1,3 +1,4 @@
+
 name: Release DigitalSigner
 
 on:
@@ -57,6 +58,7 @@ jobs:
             ## DigitalSigner ${{ github.ref_name }}
 
             ✅ Unit tests passed  
+            ✅ Application built  
             ✅ Docker image built
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
