@@ -1,77 +1,91 @@
 name: Release DigitalSigner
 
 on:
-  push:
-    tags:
-      - 'v*'
+push:
+tags:
+- 'v*'
 
 jobs:
-  test:
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v4
 
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential cmake ninja-build \
-            qtbase5-dev qttools5-dev-tools libssl-dev
+test:
+runs-on: ubuntu-24.04
 
-      - name: Build and Test
-        run: |
-          mkdir -p build && cd build
-          cmake -DCMAKE_BUILD_TYPE=Release -G Ninja ..
-          ninja
-          ctest -V --output-on-failure
+steps:
+  - name: Checkout
+    uses: actions/checkout@v4
 
-  release:
-    needs: test
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+  - name: Install dependencies
+    run: |
+      sudo apt-get update
+      sudo apt-get install -y \
+        build-essential \
+        cmake \
+        ninja-build \
+        qtbase5-dev \
+        qttools5-dev-tools \
+        libssl-dev
 
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential cmake ninja-build \
-            qtbase5-dev qttools5-dev-tools libssl-dev
+  - name: Configure
+    run: |
+      cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 
-      - name: Build Application
-        run: |
-          mkdir -p build && cd build
-          cmake -DCMAKE_BUILD_TYPE=Release -G Ninja ..
-          ninja
+  - name: Build
+    run: |
+      cmake --build build
 
-      - name: Create DEB Package
-        run: |
-          cd build
-          cpack -G DEB
+  - name: Run tests
+    run: |
+      ctest --test-dir build -V --output-on-failure
 
-      - name: Build Docker Image
-        run: docker build -t digitalsigner:${{ github.ref_name }} .
+release:
+needs: test
+runs-on: ubuntu-24.04
 
-      - name: Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            build/DigitalSigner-*.deb
-            build/DigitalSigner-*.tar.gz
-          draft: false
-          prerelease: false
-          generate_release_notes: true
-          body: |
-            ## DigitalSigner v2.1
-            
-            ### Что нового:
-            - Unit tests (GoogleTest)
-            - Полноценный CI/CD
-            - Docker multi-stage build
-            - Улучшенная безопасность и стабильность
-            
-            ### Артефакты:
-            - `.deb` пакет для Ubuntu/Debian
-            - Docker образ
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+steps:
+  - name: Checkout
+    uses: actions/checkout@v4
+    with:
+      fetch-depth: 0
+
+  - name: Install dependencies
+    run: |
+      sudo apt-get update
+      sudo apt-get install -y \
+        build-essential \
+        cmake \
+        ninja-build \
+        qtbase5-dev \
+        qttools5-dev-tools \
+        libssl-dev \
+        zip
+
+  - name: Configure
+    run: |
+      cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+
+  - name: Build
+    run: |
+      cmake --build build
+
+  - name: Create archive
+    run: |
+      mkdir -p release
+
+      cp build/DigitalSigner release/ || true
+
+      tar -czf DigitalSigner-${{ github.ref_name }}-linux.tar.gz release
+
+  - name: Build Docker image
+    run: |
+      docker build -t digitalsigner:${{ github.ref_name }} .
+
+  - name: Create GitHub Release
+    uses: softprops/action-gh-release@v2
+    with:
+      generate_release_notes: true
+      draft: false
+      prerelease: false
+      files: |
+        DigitalSigner-*.tar.gz
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
