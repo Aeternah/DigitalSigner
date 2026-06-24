@@ -1,0 +1,15 @@
+services:
+  digitalsigner:
+    build: .
+    container_name: digitalsigner
+    environment:
+      - DISPLAY=host.docker.internal:0
+      - QT_QPA_PLATFORM=xcb
+      - QT_DEBUG_PLUGINS=1
+    volumes:
+      - ./data:/data
+      # Для Windows X11 forwarding обычно не нужен этот volume
+    network_mode: host
+    stdin_open: true
+    tty: true
+    privileged: true   # иногда помогает
